@@ -1,0 +1,4 @@
+flask
+allpairspy
+pandas
+gunicorn

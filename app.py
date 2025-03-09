@@ -3,6 +3,7 @@ from itertools import combinations
 from allpairspy import AllPairs
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
+import os
 
 app = Flask(__name__)
 
@@ -15,15 +16,13 @@ def generate_pairwise_tests(parameters):
     param_names = list(parameters.keys())
     param_values = list(parameters.values())
     
-    # Generate pairwise test cases using allpairspy
     pairwise_cases = list(AllPairs(param_values))
     
-    # Collect all unique pairs across all test cases
     all_unique_pairs = set()
     test_case_unique_pair_counts = []
     
     for case in pairwise_cases:
-        case_pairs = set(combinations(case, 2))  # Unique pairs within the test case
+        case_pairs = set(combinations(case, 2))
         test_case_unique_pair_counts.append(len(case_pairs - all_unique_pairs))
         all_unique_pairs.update(case_pairs)
     
@@ -44,9 +43,14 @@ def generate():
     
     results = []
     for i, (case, unique_count) in enumerate(zip(test_cases, unique_pair_counts), 1):
-        results.append({"Test Case #": i, **dict(zip(parameters.keys(), case)), "# of New Unique Pairs Introduced": unique_count})
+        results.append({"Test Case #": i, **dict(zip(parameters.keys(), case))})
+        results[-1]["# Unique Pairs"] = unique_count
     
     return jsonify({"test_cases": results, "total_test_cases": len(test_cases), "total_unique_pairs": len(all_unique_pairs)})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+def main():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    main()
