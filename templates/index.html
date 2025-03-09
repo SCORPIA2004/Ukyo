@@ -1,0 +1,112 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pairwise Test Generator</title>
+    <script>
+        function addRow() {
+            let table = document.getElementById("paramTable");
+            let newRow = table.insertRow();
+            for (let i = 0; i < table.rows[0].cells.length; i++) {
+                let cell = newRow.insertCell(i);
+                let input = document.createElement("input");
+                input.type = "text";
+                cell.appendChild(input);
+            }
+        }
+        
+        function addColumn() {
+            let table = document.getElementById("paramTable");
+            let headerRow = table.rows[0];
+            let newHeaderCell = document.createElement("th");
+            let input = document.createElement("input");
+            input.type = "text";
+            newHeaderCell.appendChild(input);
+            headerRow.appendChild(newHeaderCell);
+            
+            for (let i = 1; i < table.rows.length; i++) {
+                let cell = table.rows[i].insertCell();
+                let input = document.createElement("input");
+                input.type = "text";
+                cell.appendChild(input);
+            }
+        }
+        
+        function generateTests() {
+            let table = document.getElementById("paramTable");
+            let parameters = {};
+            let headers = [];
+            for (let i = 0; i < table.rows[0].cells.length; i++) {
+                let headerInput = table.rows[0].cells[i].getElementsByTagName("input")[0];
+                if (headerInput && headerInput.value) {
+                    headers.push(headerInput.value);
+                    parameters[headerInput.value] = [];
+                }
+            }
+            
+            for (let i = 1; i < table.rows.length; i++) {
+                for (let j = 0; j < headers.length; j++) {
+                    let cellInput = table.rows[i].cells[j].getElementsByTagName("input")[0];
+                    if (cellInput && cellInput.value) {
+                        parameters[headers[j]].push(cellInput.value);
+                    }
+                }
+            }
+            
+            fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parameters })
+            })
+            .then(response => response.json())
+            .then(data => {
+                let resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = "<h3>Generated Test Cases</h3>";
+                if (data.error) {
+                    resultDiv.innerHTML += "<p style='color: red;'>" + data.error + "</p>";
+                } else {
+                    resultDiv.innerHTML += "<p>Total Test Cases: " + data.total_test_cases + "</p>";
+                    resultDiv.innerHTML += "<p>Total Unique Pairs: " + data.total_unique_pairs + "</p>";
+                    let tableHtml = "<table border='1'><tr>";
+                    let keys = Object.keys(data.test_cases[0]);
+                    keys.forEach(key => tableHtml += "<th>" + key + "</th>");
+                    tableHtml += "</tr>";
+                    data.test_cases.forEach(test => {
+                        tableHtml += "<tr>";
+                        keys.forEach(key => tableHtml += "<td>" + test[key] + "</td>");
+                        tableHtml += "</tr>";
+                    });
+                    tableHtml += "</table>";
+                    resultDiv.innerHTML += tableHtml;
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Pairwise Test Generator</h1>
+    <table id="paramTable" border="1">
+        <tr>
+            <th><input type="text" placeholder="Group 1"></th>
+            <th><input type="text" placeholder="Group 2"></th>
+            <th><input type="text" placeholder="Group 3"></th>
+        </tr>
+        <tr>
+            <td><input type="text"></td>
+            <td><input type="text"></td>
+            <td><input type="text"></td>
+        </tr>
+        <tr>
+            <td><input type="text"></td>
+            <td><input type="text"></td>
+            <td><input type="text"></td>
+        </tr>
+    </table>
+    <button onclick="addRow()">Add Row</button>
+    <button onclick="addColumn()">Add Column</button>
+    <button onclick="generateTests()">Generate Tests</button>
+    <div id="result"></div>
+</body>
+</html>
